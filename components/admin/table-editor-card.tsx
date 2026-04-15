@@ -1,16 +1,25 @@
-import {
-  adjustSeatedFormAction,
-  adjustWaitingFormAction,
-  deleteTableFormAction,
-  updateTableAction,
-} from "@/actions/table-actions";
+"use client";
+
+import { adminTableDispatchAction } from "@/actions/table-actions";
+import type { ActionResult } from "@/lib/action-result";
 import type { Location, PokerTable } from "@prisma/client";
+import { useActionState } from "react";
 
 type TableWithLocation = PokerTable & { location: Location };
 
 export function TableEditorCard({ table, locations }: { table: TableWithLocation; locations: Location[] }) {
+  const [state, formAction, pending] = useActionState(
+    adminTableDispatchAction,
+    undefined as ActionResult | undefined,
+  );
+
   return (
     <article className="rounded-xl border border-zinc-800 bg-zinc-900/30 p-4 space-y-4">
+      {state && !state.ok ? (
+        <p className="rounded-lg border border-red-900/50 bg-red-950/30 px-3 py-2 text-sm text-red-200" role="alert">
+          {state.message}
+        </p>
+      ) : null}
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <p className="text-[10px] font-bold uppercase tracking-wide text-zinc-500">{table.location.name}</p>
@@ -19,11 +28,13 @@ export function TableEditorCard({ table, locations }: { table: TableWithLocation
             Seated {table.seatedCount}/{table.maxSeats} · Waiting {table.waitingCount} · Blinds {table.blindsLabel}
           </p>
         </div>
-        <form action={deleteTableFormAction}>
+        <form action={formAction}>
+          <input type="hidden" name="intent" value="delete" />
           <input type="hidden" name="id" value={table.id} />
           <button
             type="submit"
-            className="rounded-lg border border-red-900/60 bg-red-950/40 px-3 py-1.5 text-xs font-bold uppercase text-red-200 hover:bg-red-950/70"
+            disabled={pending}
+            className="rounded-lg border border-red-900/60 bg-red-950/40 px-3 py-1.5 text-xs font-bold uppercase text-red-200 hover:bg-red-950/70 disabled:opacity-50"
           >
             Delete
           </button>
@@ -32,25 +43,29 @@ export function TableEditorCard({ table, locations }: { table: TableWithLocation
 
       <div className="flex flex-wrap gap-4">
         <div className="space-y-1">
-          <p className="text-[10px] font-bold uppercase text-zinc-500">Seated</p>
+          <p className="text-[10px] font-bold uppercase tracking-wide text-zinc-500">Seated</p>
           <div className="flex items-center gap-2">
-            <form action={adjustSeatedFormAction}>
+            <form action={formAction}>
+              <input type="hidden" name="intent" value="seat" />
               <input type="hidden" name="id" value={table.id} />
               <input type="hidden" name="delta" value={-1} />
               <button
                 type="submit"
-                className="h-9 w-9 rounded-lg border border-zinc-700 text-lg font-bold text-zinc-100 hover:bg-zinc-800"
+                disabled={pending}
+                className="h-9 w-9 rounded-lg border border-zinc-700 text-lg font-bold text-zinc-100 hover:bg-zinc-800 disabled:opacity-50"
               >
                 −
               </button>
             </form>
             <span className="min-w-[3ch] text-center text-sm font-bold tabular-nums">{table.seatedCount}</span>
-            <form action={adjustSeatedFormAction}>
+            <form action={formAction}>
+              <input type="hidden" name="intent" value="seat" />
               <input type="hidden" name="id" value={table.id} />
               <input type="hidden" name="delta" value={1} />
               <button
                 type="submit"
-                className="h-9 w-9 rounded-lg border border-zinc-700 text-lg font-bold text-zinc-100 hover:bg-zinc-800"
+                disabled={pending}
+                className="h-9 w-9 rounded-lg border border-zinc-700 text-lg font-bold text-zinc-100 hover:bg-zinc-800 disabled:opacity-50"
               >
                 +
               </button>
@@ -58,25 +73,29 @@ export function TableEditorCard({ table, locations }: { table: TableWithLocation
           </div>
         </div>
         <div className="space-y-1">
-          <p className="text-[10px] font-bold uppercase text-zinc-500">Waiting</p>
+          <p className="text-[10px] font-bold uppercase tracking-wide text-zinc-500">Waiting</p>
           <div className="flex items-center gap-2">
-            <form action={adjustWaitingFormAction}>
+            <form action={formAction}>
+              <input type="hidden" name="intent" value="wait" />
               <input type="hidden" name="id" value={table.id} />
               <input type="hidden" name="delta" value={-1} />
               <button
                 type="submit"
-                className="h-9 w-9 rounded-lg border border-zinc-700 text-lg font-bold text-zinc-100 hover:bg-zinc-800"
+                disabled={pending}
+                className="h-9 w-9 rounded-lg border border-zinc-700 text-lg font-bold text-zinc-100 hover:bg-zinc-800 disabled:opacity-50"
               >
                 −
               </button>
             </form>
             <span className="min-w-[3ch] text-center text-sm font-bold tabular-nums">{table.waitingCount}</span>
-            <form action={adjustWaitingFormAction}>
+            <form action={formAction}>
+              <input type="hidden" name="intent" value="wait" />
               <input type="hidden" name="id" value={table.id} />
               <input type="hidden" name="delta" value={1} />
               <button
                 type="submit"
-                className="h-9 w-9 rounded-lg border border-zinc-700 text-lg font-bold text-zinc-100 hover:bg-zinc-800"
+                disabled={pending}
+                className="h-9 w-9 rounded-lg border border-zinc-700 text-lg font-bold text-zinc-100 hover:bg-zinc-800 disabled:opacity-50"
               >
                 +
               </button>
@@ -85,7 +104,8 @@ export function TableEditorCard({ table, locations }: { table: TableWithLocation
         </div>
       </div>
 
-      <form action={updateTableAction} className="grid gap-3 border-t border-zinc-800 pt-4 sm:grid-cols-2">
+      <form action={formAction} className="grid gap-3 border-t border-zinc-800 pt-4 sm:grid-cols-2">
+        <input type="hidden" name="intent" value="update" />
         <input type="hidden" name="id" value={table.id} />
         <label className="space-y-1 text-xs font-semibold uppercase text-zinc-400">
           Location
@@ -160,9 +180,10 @@ export function TableEditorCard({ table, locations }: { table: TableWithLocation
         <div className="sm:col-span-2">
           <button
             type="submit"
-            className="rounded-lg bg-sky-700 px-4 py-2 text-sm font-bold uppercase tracking-wide text-white hover:bg-sky-600"
+            disabled={pending}
+            className="rounded-lg bg-sky-700 px-4 py-2 text-sm font-bold uppercase tracking-wide text-white hover:bg-sky-600 disabled:opacity-50"
           >
-            Save changes
+            {pending ? "Saving…" : "Save changes"}
           </button>
         </div>
       </form>

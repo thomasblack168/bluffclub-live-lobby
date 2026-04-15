@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { getBrowserSupabase } from "@/lib/supabase/client";
 import type { LobbyLocation, LobbyTable } from "@/types/lobby";
 import { LobbyHero } from "./hero";
@@ -85,6 +85,15 @@ export function LobbyShell({ initialLocations, initialTables, showAdminLink }: P
     setTables(rows.map(mapRow).filter((t): t is LobbyTable => t != null));
   }, [supabase]);
 
+  const debounceTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const scheduleRefetch = useCallback(() => {
+    if (debounceTimer.current) clearTimeout(debounceTimer.current);
+    debounceTimer.current = setTimeout(() => {
+      debounceTimer.current = null;
+      void refetch();
+    }, 280);
+  }, [refetch]);
+
   useEffect(() => {
     if (!supabase) return;
 
@@ -94,15 +103,16 @@ export function LobbyShell({ initialLocations, initialTables, showAdminLink }: P
         "postgres_changes",
         { event: "*", schema: "public", table: "poker_tables" },
         () => {
-          void refetch();
+          scheduleRefetch();
         },
       )
       .subscribe();
 
     return () => {
+      if (debounceTimer.current) clearTimeout(debounceTimer.current);
       void supabase.removeChannel(channel);
     };
-  }, [supabase, refetch]);
+  }, [supabase, scheduleRefetch]);
 
   const filtered = useMemo(() => {
     if (filter === "all") return tables;

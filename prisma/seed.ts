@@ -1,3 +1,14 @@
+/**
+ * ---------------------------------------------------------------------------
+ * WARNING — DO NOT RUN AGAINST PRODUCTION DATA YOU CARE ABOUT
+ * ---------------------------------------------------------------------------
+ * This seed calls `prisma.pokerTable.deleteMany({})`, which wipes every row
+ * in `poker_tables`. Use only on empty/dev databases. Never point `DATABASE_URL`
+ * / `DIRECT_URL` at a production Supabase project and run `prisma db seed`
+ * unless you intend to delete all live table listings.
+ * ---------------------------------------------------------------------------
+ */
+
 import { PrismaClient } from "@prisma/client";
 import bcrypt from "bcryptjs";
 

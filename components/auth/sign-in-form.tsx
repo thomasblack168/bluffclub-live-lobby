@@ -3,11 +3,15 @@
 import { signIn } from "next-auth/react";
 import { useSearchParams } from "next/navigation";
 import { useState } from "react";
+import { getSafeCallbackPath, getSafePostSignInLocation } from "@/lib/safe-callback-url";
 
 export function SignInForm() {
   const searchParams = useSearchParams();
-  const callbackUrl = searchParams.get("callbackUrl") ?? "/admin";
-  const [error, setError] = useState<string | null>(null);
+  const callbackUrl = getSafeCallbackPath(searchParams.get("callbackUrl"));
+  const queryError = searchParams.get("error");
+  const [error, setError] = useState<string | null>(
+    queryError === "ratelimit" ? "Too many sign-in attempts. Try again in a minute." : null,
+  );
   const [pending, setPending] = useState(false);
 
   async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
@@ -24,11 +28,16 @@ export function SignInForm() {
       callbackUrl,
     });
     setPending(false);
+    if (res?.status === 429 || res?.error === "ratelimit") {
+      setError("Too many sign-in attempts. Try again in a minute.");
+      return;
+    }
     if (res?.error) {
       setError("Invalid email or password.");
       return;
     }
-    window.location.href = res?.url ?? callbackUrl;
+    const origin = typeof window !== "undefined" ? window.location.origin : "";
+    window.location.href = getSafePostSignInLocation(res?.url ?? callbackUrl, origin, callbackUrl);
   }
 
   return (
