@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { createBrowserSupabase } from "@/lib/supabase/client";
+import { getBrowserSupabase } from "@/lib/supabase/client";
 import type { LobbyLocation, LobbyTable } from "@/types/lobby";
 import { LobbyHero } from "./hero";
 import { LocationTabs } from "./location-tabs";
@@ -65,13 +65,13 @@ type Props = {
 export function LobbyShell({ initialLocations, initialTables, showAdminLink }: Props) {
   const [filter, setFilter] = useState<"all" | string>("all");
   const [tables, setTables] = useState<LobbyTable[]>(initialTables);
+  const supabase = useMemo(() => getBrowserSupabase(), []);
 
   useEffect(() => {
     setTables(initialTables);
   }, [initialTables]);
 
   const refetch = useCallback(async () => {
-    const supabase = createBrowserSupabase();
     if (!supabase) return;
     const { data, error } = await supabase
       .from("poker_tables")
@@ -83,10 +83,9 @@ export function LobbyShell({ initialLocations, initialTables, showAdminLink }: P
     if (error || !data) return;
     const rows = data as unknown as Row[];
     setTables(rows.map(mapRow).filter((t): t is LobbyTable => t != null));
-  }, []);
+  }, [supabase]);
 
   useEffect(() => {
-    const supabase = createBrowserSupabase();
     if (!supabase) return;
 
     const channel = supabase
@@ -103,7 +102,7 @@ export function LobbyShell({ initialLocations, initialTables, showAdminLink }: P
     return () => {
       void supabase.removeChannel(channel);
     };
-  }, [refetch]);
+  }, [supabase, refetch]);
 
   const filtered = useMemo(() => {
     if (filter === "all") return tables;
@@ -122,7 +121,7 @@ export function LobbyShell({ initialLocations, initialTables, showAdminLink }: P
       <LobbyHero showAdminLink={showAdminLink} />
       <LocationTabs locations={initialLocations} active={filter} onChange={setFilter} />
       <main className="mx-auto max-w-3xl space-y-3 px-3 py-5 sm:px-6">
-        {createBrowserSupabase() === null ? (
+        {supabase === null ? (
           <p className="rounded-lg border border-amber-900/50 bg-amber-950/30 px-3 py-2 text-xs text-amber-100/90">
             Set <code className="font-mono">NEXT_PUBLIC_SUPABASE_URL</code> and{" "}
             <code className="font-mono">NEXT_PUBLIC_SUPABASE_ANON_KEY</code> for live updates. Data below is from the
