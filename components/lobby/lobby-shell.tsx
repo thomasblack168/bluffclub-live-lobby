@@ -1,5 +1,6 @@
 "use client";
 
+import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { getBrowserSupabase } from "@/lib/supabase/client";
 import type { LobbyLocation, LobbyTable } from "@/types/lobby";
@@ -65,6 +66,8 @@ type Props = {
 export function LobbyShell({ initialLocations, initialTables, showAdminLink }: Props) {
   const [filter, setFilter] = useState<"all" | string>("all");
   const [tables, setTables] = useState<LobbyTable[]>(initialTables);
+  const [realtimeReady, setRealtimeReady] = useState(false);
+  const reduceMotion = useReducedMotion();
   const supabase = useMemo(() => getBrowserSupabase(), []);
 
   useEffect(() => {
@@ -106,13 +109,25 @@ export function LobbyShell({ initialLocations, initialTables, showAdminLink }: P
           scheduleRefetch();
         },
       )
-      .subscribe();
+      .subscribe((status) => {
+        setRealtimeReady(status === "SUBSCRIBED");
+      });
 
     return () => {
       if (debounceTimer.current) clearTimeout(debounceTimer.current);
+      setRealtimeReady(false);
       void supabase.removeChannel(channel);
     };
   }, [supabase, scheduleRefetch]);
+
+  useEffect(() => {
+    if (!supabase) return;
+    const id = setInterval(() => {
+      // Fallback: keep numbers moving even when Realtime publication is misconfigured.
+      void refetch();
+    }, 5000);
+    return () => clearInterval(id);
+  }, [supabase, refetch]);
 
   const filtered = useMemo(() => {
     if (filter === "all") return tables;
@@ -132,16 +147,41 @@ export function LobbyShell({ initialLocations, initialTables, showAdminLink }: P
       <LocationTabs locations={initialLocations} active={filter} onChange={setFilter} />
       <main className="mx-auto max-w-3xl space-y-3 px-3 py-5 sm:px-6">
         {supabase === null ? (
-          <p className="rounded-lg border border-amber-900/50 bg-amber-950/30 px-3 py-2 text-xs text-amber-100/90">
+          <motion.p
+            initial={reduceMotion ? false : { opacity: 0, y: 4 }}
+            animate={reduceMotion ? undefined : { opacity: 1, y: 0 }}
+            className="rounded-lg border border-amber-900/50 bg-amber-950/30 px-3 py-2 text-xs text-amber-100/90"
+          >
             Set <code className="font-mono">NEXT_PUBLIC_SUPABASE_URL</code> and{" "}
             <code className="font-mono">NEXT_PUBLIC_SUPABASE_ANON_KEY</code> for live updates. Data below is from the
             last server load.
-          </p>
+          </motion.p>
+        ) : !realtimeReady ? (
+          <motion.p
+            initial={reduceMotion ? false : { opacity: 0, y: 4 }}
+            animate={reduceMotion ? undefined : { opacity: 1, y: 0 }}
+            className="rounded-lg border border-zinc-700 bg-zinc-900/60 px-3 py-2 text-xs text-zinc-300"
+          >
+            Realtime is reconnecting. Auto-refresh every 5s is active.
+          </motion.p>
         ) : null}
         {sorted.length === 0 ? (
           <p className="text-center text-sm text-zinc-500 py-10 uppercase tracking-wide">No active tables</p>
         ) : (
-          sorted.map((t) => <TableCard key={t.id} table={t} />)
+          <AnimatePresence initial={false}>
+            {sorted.map((t) => (
+              <motion.div
+                key={t.id}
+                layout
+                initial={reduceMotion ? false : { opacity: 0, y: 10, scale: 0.99 }}
+                animate={reduceMotion ? undefined : { opacity: 1, y: 0, scale: 1 }}
+                exit={reduceMotion ? undefined : { opacity: 0, y: -10, scale: 0.99 }}
+                transition={{ duration: 0.24, ease: "easeOut" }}
+              >
+                <TableCard table={t} />
+              </motion.div>
+            ))}
+          </AnimatePresence>
         )}
       </main>
     </div>

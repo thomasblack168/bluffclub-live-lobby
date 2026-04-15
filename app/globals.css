@@ -17,3 +17,47 @@ body {
   color: var(--foreground);
   font-family: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
 }
+
+@keyframes ambientDrift {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0) scale(1);
+    opacity: 0.22;
+  }
+  50% {
+    transform: translate3d(0, -8px, 0) scale(1.04);
+    opacity: 0.36;
+  }
+}
+
+@keyframes softPulse {
+  0%,
+  100% {
+    opacity: 0.88;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+.ambient-drift-slow {
+  animation: ambientDrift 18s ease-in-out infinite;
+  will-change: transform, opacity;
+}
+
+.ambient-drift-slower {
+  animation: ambientDrift 26s ease-in-out infinite;
+  will-change: transform, opacity;
+}
+
+.soft-pulse {
+  animation: softPulse 2.6s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ambient-drift-slow,
+  .ambient-drift-slower,
+  .soft-pulse {
+    animation: none !important;
+  }
+}

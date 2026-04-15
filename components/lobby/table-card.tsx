@@ -1,4 +1,5 @@
 import type { LobbyTable } from "@/types/lobby";
+import { AnimatedSeatCount } from "./animated-seat-count";
 
 function variantRing(variant: string) {
   switch (variant) {
@@ -35,9 +36,10 @@ function logoLabel(table: LobbyTable) {
 
 export function TableCard({ table }: { table: LobbyTable }) {
   const v = table.location.variant;
+  const hasWaiting = table.waitingCount > 0;
   return (
     <article
-      className={`relative overflow-hidden rounded-xl border bg-gradient-to-r ${variantBg(v)} ${variantRing(
+      className={`relative overflow-hidden rounded-xl border bg-gradient-to-r transition-transform duration-300 motion-safe:hover:-translate-y-0.5 ${variantBg(v)} ${variantRing(
         v,
       )}`}
     >
@@ -56,9 +58,9 @@ export function TableCard({ table }: { table: LobbyTable }) {
               <span className="text-zinc-500" aria-hidden>
                 ●
               </span>
-              {table.seatedCount} / {table.maxSeats}
+              <AnimatedSeatCount seatedCount={table.seatedCount} maxSeats={table.maxSeats} />
             </span>
-            <span className="inline-flex items-center gap-1.5 text-amber-200/90">
+            <span className={`inline-flex items-center gap-1.5 text-amber-200/90 ${hasWaiting ? "soft-pulse" : ""}`}>
               <span className="text-amber-500/80" aria-hidden>
                 ◆
               </span>

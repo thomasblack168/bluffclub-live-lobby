@@ -1,6 +1,7 @@
 "use client";
 
 import { createTableFormAction } from "@/actions/table-actions";
+import { AnimatePresence, motion } from "framer-motion";
 import type { ActionResult } from "@/lib/action-result";
 import { useActionState } from "react";
 
@@ -12,11 +13,21 @@ export function CreateTableForm({ locations }: { locations: Loc[] }) {
   return (
     <section className="rounded-xl border border-zinc-800 bg-zinc-900/40 p-4">
       <h2 className="text-sm font-bold uppercase tracking-wide text-zinc-200">Add table</h2>
-      {state && !state.ok ? (
-        <p className="mt-2 text-sm text-red-400" role="alert">
-          {state.message}
-        </p>
-      ) : null}
+      <AnimatePresence initial={false}>
+        {state && !state.ok ? (
+          <motion.p
+            key="create-error"
+            role="alert"
+            initial={{ opacity: 0, y: -4 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -4 }}
+            transition={{ duration: 0.2 }}
+            className="mt-2 text-sm text-red-400"
+          >
+            {state.message}
+          </motion.p>
+        ) : null}
+      </AnimatePresence>
       <form action={formAction} className="mt-4 grid gap-3 sm:grid-cols-2">
         <label className="space-y-1 text-xs font-semibold uppercase text-zinc-400">
           Location
@@ -91,9 +102,27 @@ export function CreateTableForm({ locations }: { locations: Loc[] }) {
           <button
             type="submit"
             disabled={pending}
-            className="rounded-lg bg-emerald-600 px-4 py-2 text-sm font-bold uppercase tracking-wide text-white hover:bg-emerald-500 disabled:opacity-50"
+            className="inline-flex items-center justify-center gap-2 rounded-lg bg-emerald-600 px-4 py-2 text-sm font-bold uppercase tracking-wide text-white transition-transform duration-200 hover:bg-emerald-500 active:scale-[0.98] disabled:opacity-50"
           >
-            {pending ? "Creating…" : "Create table"}
+            <AnimatePresence mode="wait" initial={false}>
+              <motion.span
+                key={pending ? "creating" : "create"}
+                initial={{ opacity: 0, y: 3 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -3 }}
+                transition={{ duration: 0.18 }}
+                className="inline-flex items-center gap-2"
+              >
+                {pending ? (
+                  <>
+                    <span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-white/35 border-t-white" />
+                    Creating...
+                  </>
+                ) : (
+                  "Create table"
+                )}
+              </motion.span>
+            </AnimatePresence>
           </button>
         </div>
       </form>

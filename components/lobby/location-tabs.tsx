@@ -1,5 +1,6 @@
 "use client";
 
+import { motion } from "framer-motion";
 import type { LobbyLocation } from "@/types/lobby";
 
 type Props = {
@@ -18,12 +19,19 @@ export function LocationTabs({ locations, active, onChange }: Props) {
         <button
           type="button"
           onClick={() => onChange("all")}
-          className={`rounded-full px-3 py-1 text-[11px] font-bold uppercase tracking-wide transition ${
+          className={`relative rounded-full px-3 py-1 text-[11px] font-bold uppercase tracking-wide transition ${
             active === "all"
               ? "bg-zinc-100 text-zinc-900"
               : "bg-zinc-900 text-zinc-400 hover:text-zinc-200"
           }`}
         >
+          {active === "all" ? (
+            <motion.span
+              layoutId="active-location-pill"
+              className="absolute inset-0 -z-10 rounded-full bg-zinc-100"
+              transition={{ type: "spring", stiffness: 360, damping: 30 }}
+            />
+          ) : null}
           All
         </button>
         {locations.map((loc) => (
@@ -31,7 +39,7 @@ export function LocationTabs({ locations, active, onChange }: Props) {
             key={loc.id}
             type="button"
             onClick={() => onChange(loc.slug)}
-            className={`rounded-full px-3 py-1 text-[11px] font-bold uppercase tracking-wide transition ${
+            className={`relative rounded-full px-3 py-1 text-[11px] font-bold uppercase tracking-wide transition ${
               active === loc.slug
                 ? loc.variant === "online"
                   ? "bg-sky-600 text-white"
@@ -45,6 +53,13 @@ export function LocationTabs({ locations, active, onChange }: Props) {
                     : "bg-zinc-800 text-zinc-200 hover:bg-zinc-700"
             }`}
           >
+            {active === loc.slug ? (
+              <motion.span
+                layoutId="active-location-pill"
+                className="absolute inset-0 -z-10 rounded-full bg-current/20"
+                transition={{ type: "spring", stiffness: 360, damping: 30 }}
+              />
+            ) : null}
             {loc.name}
           </button>
         ))}
