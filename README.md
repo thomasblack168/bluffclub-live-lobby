@@ -20,7 +20,8 @@ Next.js (App Router) lobby that shows live poker table status, plus a staff-only
 
    Copy `.env.example` to `.env.local` and fill values:
 
-   - `DATABASE_URL` — Supabase connection string (transaction pooler is fine for Prisma on Vercel).
+   - `DATABASE_URL` — Supabase **transaction pooler** (port `6543`) for the running app / Prisma Client on Vercel.
+   - `DIRECT_URL` — Supabase **direct** Postgres URL (port `5432`, host `db.<project>.supabase.co`). Required for `prisma migrate deploy`; the pooler alone often hangs or errors during migrations.
    - `AUTH_SECRET` — e.g. `openssl rand -base64 32`.
    - `AUTH_URL` — public site URL (`http://localhost:3000` locally, your Vercel URL in prod).
    - `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY` — for the lobby browser client + Realtime.
@@ -73,10 +74,20 @@ Next.js (App Router) lobby that shows live poker table status, plus a staff-only
 
 If Supabase env vars are missing, the lobby still renders from the server but shows a notice and skips the subscription.
 
+### `JWTSessionError` / `[auth][error] JWTSessionError`
+
+Usually the session cookie was encrypted with a **different or missing `AUTH_SECRET`**, or the cookie is stale. Fix: set a stable `AUTH_SECRET` in `.env` / Vercel (e.g. `openssl rand -base64 32`), set **`AUTH_URL`** to your real origin (`https://…` on Vercel), redeploy, then **clear site cookies** and sign in again.
+
+The public lobby uses `getToken` so a bad cookie does not spam the console. Other `auth()` paths (e.g. admin actions) still log real errors, but **invalid JWT cookies are silenced** in the shared Auth.js `logger` in `auth.config.ts`.
+
+### `prepared statement "s1" already exists` when running `npm run db:seed`
+
+This happens if Prisma talks to the **Supabase transaction pooler** (port `6543`) without `?pgbouncer=true`, or when the pooler conflicts with prepared statements. The seed script uses **`DIRECT_URL` when set** (direct Postgres, port `5432`) so `npm run db:seed` works reliably. Ensure `.env` has `DIRECT_URL` from Supabase **Database → Connection string → Direct**. For the app’s `DATABASE_URL` pooler string, add **`?pgbouncer=true`** (see `.env.example`).
+
 ## Deploy (Vercel)
 
-- Set the same env vars in the Vercel project.
-- Use Supabase **pooler** `DATABASE_URL` for Prisma.
+- Set the same env vars in the Vercel project (you can omit `DIRECT_URL` on Vercel if you only run migrations from your machine or CI with a `.env` that includes it).
+- Use Supabase **pooler** for `DATABASE_URL` and **direct** for `DIRECT_URL` when migrating (see `.env.example`).
 - Ensure `AUTH_URL` matches your production domain.
 
 ## Project layout

@@ -1,12 +1,12 @@
-import { auth } from "@/auth";
 import { LobbyShell } from "@/components/lobby/lobby-shell";
+import { getSessionSafe } from "@/lib/get-session-safe";
 import { prisma } from "@/lib/prisma";
 import type { LobbyLocation, LobbyTable } from "@/types/lobby";
 
 export const dynamic = "force-dynamic";
 
 export default async function Home() {
-  const session = await auth();
+  const session = await getSessionSafe();
   const [locations, tables] = await Promise.all([
     prisma.location.findMany({ orderBy: { sortOrder: "asc" } }),
     prisma.pokerTable.findMany({

@@ -1,7 +1,15 @@
 import { PrismaClient } from "@prisma/client";
 import bcrypt from "bcryptjs";
 
-const prisma = new PrismaClient();
+// Supabase pooler (6543) + Prisma often hits "prepared statement already exists". Seed via direct DB URL.
+const seedDbUrl = process.env.DIRECT_URL ?? process.env.DATABASE_URL;
+if (!seedDbUrl) {
+  throw new Error("Set DIRECT_URL or DATABASE_URL in .env to run prisma db seed.");
+}
+
+const prisma = new PrismaClient({
+  datasources: { db: { url: seedDbUrl } },
+});
 
 async function main() {
   const passwordPlain = process.env.SEED_STAFF_PASSWORD ?? "changeme";

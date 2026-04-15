@@ -6,7 +6,12 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 
 async function requireStaff() {
-  const session = await auth();
+  let session;
+  try {
+    session = await auth();
+  } catch {
+    throw new Error("Unauthorized");
+  }
   if (!session?.user || session.user.role !== "staff") {
     throw new Error("Unauthorized");
   }
